@@ -54,6 +54,46 @@ class CobolFieldInitializerTest {
         });
     }
     
+    @Test
+    void write_ShouldCreateFormattedString() throws Exception {
+        // Arrange
+        TestRecord record = new TestRecord();
+        record.id = "ABC123";
+        record.count = "42";
+        record.address = new TestRecord.Address();
+        record.address.street = "Main Street";
+        record.address.city = "New York";
+        
+        // Act
+        String result = CobolFieldInitializer.write(record);
+        
+        // Assert
+        String expected = "ABC123    00042Main Street         New York  ";
+        assertEquals(expected, result);
+    }
+    
+    @Test
+    void writeAndParse_ShouldRoundTrip() throws Exception {
+        // Arrange
+        TestRecord original = new TestRecord();
+        original.id = "XYZ789";
+        original.count = "123";
+        original.address = new TestRecord.Address();
+        original.address.street = "Oak Avenue";
+        original.address.city = "Boston";
+        
+        // Act
+        String serialized = CobolFieldInitializer.write(original);
+        TestRecord deserialized = new TestRecord();
+        CobolFieldInitializer.parseRecord(deserialized, serialized, 0);
+        
+        // Assert
+        assertEquals("XYZ789    ", deserialized.id);
+        assertEquals("00123", deserialized.count);
+        assertEquals("Oak Avenue          ", deserialized.address.street);
+        assertEquals("Boston    ", deserialized.address.city);
+    }
+    
     // Test class for the tests
     static class TestRecord {
         @CobolField(type = CobolFieldType.ALPHANUMERIC, length = 10)
