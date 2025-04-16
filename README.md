@@ -13,21 +13,53 @@ COBOL Initializer lets you:
 
 ## Get It
 
-### Maven
+### Using JitPack
+
+Wanna use the latest and greatest? JitPack has your back!  
+Just add JitPack to your repositories and pull in this library.
+
+#### Step 1: Add JitPack to your build
+
+**Maven:**
+
+```xml
+<repositories>
+  <repository>
+    <id>jitpack.io</id>
+    <url>https://jitpack.io</url>
+  </repository>
+</repositories>
+```
+
+**Gradle:**
+
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+```
+
+#### Step 2: Add the dependency
+
+Replace `TAG` with the release/tag/commit you want (e.g. `main` or a release tag):
+
+**Maven:**
 
 ```xml
 <dependency>
-    <groupId>org.dm.cobol</groupId>
+    <groupId>com.github.dhruva-mittal</groupId>
     <artifactId>cobol-initializer</artifactId>
-    <version>0.1.0</version>
+    <version>TAG</version>
 </dependency>
 ```
 
-### Gradle
+**Gradle:**
 
 ```groovy
-implementation 'org.dm.cobol:cobol-initializer:0.1.0'
+implementation 'com.github.dhruva-mittal:cobol-initializer:TAG'
 ```
+
+> **Tip:** For the latest code, use `main` as the version. For a specific release, use the tag name.
 
 ## How Do I Use It?
 
@@ -87,7 +119,7 @@ CobolFieldInitializer.parseRecord(customer, record, 0);
 
 ## Docs?
 
-Want more details? Check out the [Javadoc](https://dhruva-mittal.github.io/cobol-initializer/).
+No Javadocs yet — but the code is pretty chill and self-explanatory. If you get stuck, open an issue or peek at the examples above!
 
 ## Wanna Help?
 
