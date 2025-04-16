@@ -275,9 +275,9 @@ public class CobolFieldInitializer {
             case DECIMAL:
                 // Handle decimal points
                 int scale = cobolField.scale();
-                int integerPart = length - scale;
+                int integerPart = length - scale - 1;
                 if (scale > 0 && integerPart > 0) {
-                    return repeatString("0", integerPart) + repeatString("0", scale);
+                    return repeatString("0", integerPart) + "." + repeatString("0", scale);
                 }
                 return repeatString("0", length);
                 
@@ -300,5 +300,143 @@ public class CobolFieldInitializer {
             builder.append(str);
         }
         return builder.toString();
+    }
+
+    /**
+     * Write a COBOL-annotated object to a string based on field annotations.
+     * Currently only supports String field types.
+     *
+     * @param obj The object to write
+     * @return A string representation of the object according to COBOL field definitions
+     * @throws IllegalAccessException If a field cannot be accessed
+     */
+    public static String write(Object obj) throws IllegalAccessException {
+        StringBuilder result = new StringBuilder();
+        writeObject(obj, result);
+        return result.toString();
+    }
+
+    /**
+     * Recursively write an object and its nested objects to a string builder.
+     *
+     * @param obj The object to write
+     * @param builder The string builder to append to
+     * @throws IllegalAccessException If a field cannot be accessed
+     */
+    private static void writeObject(Object obj, StringBuilder builder) throws IllegalAccessException {
+        Class<?> clazz = obj.getClass();
+        
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
+            
+            if (field.isAnnotationPresent(CobolField.class)) {
+                CobolField cobolField = field.getAnnotation(CobolField.class);
+                Object value = field.get(obj);
+                
+                // Format the field value according to its COBOL type
+                String stringValue = formatFieldValue(value, cobolField);
+                builder.append(stringValue);
+            } 
+            else if (field.isAnnotationPresent(CobolNestedObject.class)) {
+                // Handle nested objects recursively
+                Object nestedObj = field.get(obj);
+                if (nestedObj != null) {
+                    writeObject(nestedObj, builder);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Format a field value according to its COBOL type.
+     * Currently only supports String field types.
+     *
+     * @param value The field value
+     * @param cobolField The CobolField annotation
+     * @return The formatted string value
+     * @throws IllegalArgumentException If the value is incompatible with the COBOL field type
+     */
+    private static String formatFieldValue(Object value, CobolField cobolField) {
+        int length = cobolField.length();
+        CobolFieldType type = cobolField.type();
+        
+        // If null, use default value for the field type
+        if (value == null) {
+            return getDefaultValue(cobolField);
+        }
+        
+        // Currently only supporting String fields
+        String stringValue = value.toString();
+        
+        switch (type) {
+            case ALPHANUMERIC:
+                // Left-align and pad with spaces
+                if (stringValue.length() > length) {
+                    return stringValue.substring(0, length);
+                } else {
+                    return String.format("%-" + length + "s", stringValue);
+                }
+
+            case NUMERIC:
+            case SIGNED_NUMERIC:
+                // Verify numeric content
+                if (!stringValue.matches("^[0-9]*$")) {
+                    throw new IllegalArgumentException(
+                        "Field value '" + stringValue + "' contains non-numeric characters for NUMERIC field type");
+                }
+                
+                // Right-align and pad with zeros
+                if (stringValue.length() > length) {
+                    throw new IllegalArgumentException(
+                        "Numeric value '" + stringValue + "' exceeds field length of " + length);
+                } else {
+                    return String.format("%0" + length + "d", 
+                           Integer.parseInt(stringValue.isEmpty() ? "0" : stringValue));
+                }
+                
+            case DECIMAL:
+                // Handle decimal types
+                String cleanValue = stringValue.replaceFirst("\\.", "");
+                int scale = cobolField.scale();
+                
+                // Verify decimal content
+                if (!cleanValue.matches("^[0-9]*$")) {
+                    throw new IllegalArgumentException(
+                        "Field value '" + stringValue + "' contains invalid characters for DECIMAL field type");
+                }
+                
+                // Check if value fits in the field considering scale
+                int valueIntegerPart = stringValue.contains(".") ? 
+                    stringValue.split("\\.")[0].length() : stringValue.length();
+                int valueDecimalPart = stringValue.contains(".") && stringValue.split("\\.").length > 1 ? 
+                    stringValue.split("\\.")[1].length() : 0;
+                    
+                int maxIntegerPartLength = length - scale - (scale > 0 ? 1 : 0);
+                
+                if (valueIntegerPart > maxIntegerPartLength || valueDecimalPart > scale) {
+                    throw new IllegalArgumentException(
+                        "Decimal value '" + stringValue + "' exceeds field specification of length " + 
+                        length + " with scale " + scale);
+                }
+                
+                // Format decimal value
+                if (scale > 0) {
+                    // Handle explicit decimal point
+                    double doubleValue = Double.parseDouble(stringValue.isEmpty() ? "0" : stringValue);
+                    return String.format("%0" + length + "." + scale + "f", doubleValue);
+                } else {
+                    // No decimal point
+                    return String.format("%0" + length + "d", 
+                           Integer.parseInt(cleanValue.isEmpty() ? "0" : cleanValue));
+                }
+                
+            default:
+                // Default to left-align and pad with spaces
+                if (stringValue.length() > length) {
+                    return stringValue.substring(0, length);
+                } else {
+                    return String.format("%-" + length + "s", stringValue);
+                }
+        }
     }
 }

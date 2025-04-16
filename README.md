@@ -1,14 +1,17 @@
 # COBOL Initializer 🚀
 
-Hey there! Welcome to COBOL Initializer — a Java library that makes working with COBOL data in Java way less painful. Annotate your classes, parse records, and chill. 😎
+Hey there! Welcome to COBOL Initializer — a Java library that makes working with COBOL data in Java way less painful.
+Annotate your classes, parse records, and chill. 😎
 
-## What’s This?
+## What's This?
 
 COBOL Initializer lets you:
 
 - Annotate Java fields to match COBOL data types
 - Auto-initialize your Java objects with COBOL-style defaults
-- Parse COBOL record strings into Java objects (yep, even nested ones)
+- Parse COBOL record strings into Java objects (including nested objects)
+- Write Java objects back to COBOL-formatted strings
+- Calculate field positions based on COBOL specifications
 - Basically, make COBOL and Java play nice together
 
 ## Get It
@@ -23,11 +26,12 @@ Just add JitPack to your repositories and pull in this library.
 **Maven:**
 
 ```xml
+
 <repositories>
-  <repository>
-    <id>jitpack.io</id>
-    <url>https://jitpack.io</url>
-  </repository>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
 </repositories>
 ```
 
@@ -46,6 +50,7 @@ Replace `TAG` with the release/tag/commit you want (e.g. `main` or a release tag
 **Maven:**
 
 ```xml
+
 <dependency>
     <groupId>com.github.dhruva-mittal</groupId>
     <artifactId>cobol-initializer</artifactId>
@@ -112,14 +117,64 @@ public class CustomerRecord {
 ### Parsing a COBOL Record
 
 ```java
-CustomerRecord customer = new CustomerRecord();
-String record = "ABC123    John Doe                     00042123 Main St                             New York            ";
-CobolFieldInitializer.parseRecord(customer, record, 0);
+CustomerRecord customer=new CustomerRecord();
+        String record="ABC123    John Doe                     00042123 Main St                             New York            ";
+        CobolFieldInitializer.parseRecord(customer,record,0);
+```
+
+### Writing a COBOL Record
+
+```java
+CustomerRecord customer=new CustomerRecord();
+        customer.setCustomerId("ABC123");
+        customer.setName("John Doe");
+        customer.setAge("42");
+// Set address fields...
+
+// Convert the object to a COBOL-formatted string
+        String cobolRecord=CobolFieldInitializer.write(customer);
+```
+
+### Supported COBOL Field Types
+
+The library supports several COBOL field types:
+
+| Type             | Description                | Default Initialization          |
+|------------------|----------------------------|---------------------------------|
+| `ALPHANUMERIC`   | Text fields                | Spaces                          |
+| `NUMERIC`        | Whole number fields        | Zeros                           |
+| `SIGNED_NUMERIC` | Signed whole number fields | Zeros                           |
+| `DECIMAL`        | Fields with decimal points | Zeros (including decimal point) |
+
+Example:
+
+```java
+// Alphanumeric field (initialized to spaces)
+@CobolField(type = CobolFieldType.ALPHANUMERIC, length = 20)
+private String customerName;
+
+// Numeric field (initialized to zeros)
+@CobolField(type = CobolFieldType.NUMERIC, length = 6)
+private String quantity;
+
+// Decimal field with 2 decimal places
+@CobolField(type = CobolFieldType.DECIMAL, length = 8, scale = 2)
+private String price;  // Format: XXXXX.XX
+```
+
+### Working with Decimal Fields
+
+For decimal fields, you can specify the scale:
+
+```java
+@CobolField(type = CobolFieldType.DECIMAL, length = 10, scale = 2)
+private String amount;  // Will be formatted as XXXXXXX.XX
 ```
 
 ## Docs?
 
-No Javadocs yet — but the code is pretty chill and self-explanatory. If you get stuck, open an issue or peek at the examples above!
+No Javadocs yet — but the code is pretty chill and self-explanatory. If you get stuck, open an issue or peek at the
+examples above!
 
 ## Wanna Help?
 
